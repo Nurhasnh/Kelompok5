@@ -1,3 +1,72 @@
+<?php
+session_start();
+
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
+
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Fungsi untuk membersihkan data input
+function clean_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
+// Cek apakah form telah disubmit
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Ambil data dari form
+    $username = clean_input($_POST["username"]);
+    $password = clean_input($_POST["password"]);
+
+    // Siapkan statement SQL untuk mengambil data pengguna
+    $stmt = $mysqli->prepare("SELECT id, password FROM members WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->store_result();
+
+    // Periksa apakah pengguna ditemukan
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($id, $hashed_password);
+        $stmt->fetch();
+
+        // Verifikasi password
+        if (password_verify($password, $hashed_password)) {
+            // Password benar, simpan informasi ke session
+            $_SESSION['logged_in'] = true;
+            $_SESSION['user_id'] = $id;
+            $_SESSION['username'] = $username;
+
+            // Redirect ke homepage
+            header('Location: homepage.php');
+            exit;
+        } else {
+            // Password salah
+            $error_message = "Password salah. Silakan coba lagi.";
+        }
+    } else {
+        // Username tidak ditemukan
+        $error_message = "Username tidak ditemukan. Silakan coba lagi.";
+    }
+
+    // Tutup statement
+    $stmt->close();
+}
+
+// Tutup koneksi
+$mysqli->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,6 +141,11 @@
             font-weight: bold;
             margin-bottom: 20px;
         }
+
+        .error {
+            color: red;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -79,11 +153,14 @@
 <div class="container">
     <div class="header">Selamat Datang!</div>
     <h2>Login</h2>
-    <form action="homepage.php" method="POST" class="login-form">
-        <input type="text" placeholder="Masukan Username" required>
-        <input type="password" placeholder="Masukan Password" required>
+    <?php if (isset($error_message)): ?>
+        <div class="error"><?php echo $error_message; ?></div>
+    <?php endif; ?>
+    <form action="login.php" method="POST" class="login-form">
+        <input type="text" name="username" placeholder="Masukan Username" required>
+        <input type="password" name="password" placeholder="Masukan Password" required>
         <div>
-            <input type="checkbox" id="remember">
+            <input type="checkbox" id="remember" name="remember">
             <label for="remember">Ingat saya</label>
             <a href="#" style="float: right;margin : 10px;">Lupa Password?</a>
         </div>
