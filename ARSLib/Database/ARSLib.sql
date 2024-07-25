@@ -1,5 +1,9 @@
-
+--
 Database : 'ARSLib'
+--
+--------------------
+
+--------- Table Structure for table'admin'---------
 
 CREATE TABLE books (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -19,3 +23,6 @@ CREATE TABLE admins (
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO 'admins' ('id','username','email','password') VALUES
+(1,'nurhasnh','nurhasnh20@gmail.com','nunuy20');
