@@ -1,10 +1,29 @@
 <?php
-$file = 'books.json';
-$books = [];
+session_start();
 
-if (file_exists($file)) {
-    $books = json_decode(file_get_contents($file), true);
+// Periksa apakah pengguna sudah login
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: login.php');
+    exit;
 }
+
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
+
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Fungsi untuk membaca data dari database
+$result = $mysqli->query('SELECT * FROM books');
+$books = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -14,134 +33,15 @@ if (file_exists($file)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Homepage</title>
     <style>
-        /* CSS styling */
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
         }
-
         .container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            padding: 50px;
-            text-align: center;
-            width: 80%;
-            margin: 20px auto;
+            padding: 20px;
         }
-
-        .search-bar input[type="text"] {
-            width: calc(100% - 80px);
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        .search-bar button {
-            padding: 8px 15px;
-            border: none;
-            background-color: #333;
-            color: white;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .search-bar button:hover {
-            background-color: #444;
-        }
-
-        .card {
-            width: calc(30% - 20px);
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            text-align: center;
-            padding: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-right: 20px;
-            display: inline-block;
-            vertical-align: top;
-        }
-
-        .card:last-child {
-            margin-right: 0;
-        }
-
-        .card:hover {
-            transform: scale(1.05);
-        }
-
-        .card img {
-            width: 100%;
-            height: 200px;
-            background-color: #e0e0e0;
-            margin-bottom: 10px;
-        }
-
-        .card h3 {
-            font-size: 18px;
-            margin: 10px 0;
-        }
-
-        .card p {
-            margin: 5px 0;
-        }
-
-        .card .rating {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .card .rating span {
-            font-size: 20px;
-            color: #ffc107;
-            cursor: pointer;
-        }
-
-        .card .rating span.active {
-            color: #ff9800;
-        }
-
-        .card .comment-section {
-            margin-top: 10px;
-            text-align: left;
-        }
-
-        .card .comment-section form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .card .comment-section form textarea {
-            resize: none;
-            padding: 8px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        .card .comment-section form button {
-            align-self: flex-end;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            background-color: #5cb85c;
-            color: white;
-        }
-
         .sidebar {
             height: 100%;
             width: 0;
@@ -149,46 +49,98 @@ if (file_exists($file)) {
             z-index: 1;
             top: 0;
             left: 0;
-            background-color: white;
+            background-color: #111;
             overflow-x: hidden;
             transition: 0.5s;
             padding-top: 60px;
-            border-right: 1px solid #ccc;
         }
-
         .sidebar a {
-            padding: 10px 15px;
+            padding: 8px 8px 8px 32px;
             text-decoration: none;
-            font-size: 22px;
-            color: black;
+            font-size: 25px;
+            color: #818181;
             display: block;
             transition: 0.3s;
         }
-
         .sidebar a:hover {
-            background-color: #f1f1f1;
+            color: #f1f1f1;
         }
-
         .sidebar .closebtn {
             position: absolute;
-            top: 20px;
+            top: 0;
             right: 25px;
             font-size: 36px;
+            margin-left: 50px;
         }
-
         .openbtn {
             font-size: 20px;
             cursor: pointer;
-            background-color: #333;
+            background-color: #111;
             color: white;
             padding: 10px 15px;
             border: none;
-            position: fixed;
-            top: 20px;
-            left: 20px;
         }
-
         .openbtn:hover {
+            background-color: #444;
+        }
+        .search-bar {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        .search-bar input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .search-bar button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #111;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .search-bar button:hover {
+            background-color: #444;
+        }
+        .book-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .book-item {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex: 1 1 calc(33.333% - 20px);
+            box-sizing: border-box;
+        }
+        .book-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .book-item h2 {
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+        .book-item p {
+            color: #555;
+        }
+        .book-item a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #111;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .book-item a:hover {
             background-color: #444;
         }
     </style>
@@ -197,47 +149,36 @@ if (file_exists($file)) {
     <!-- Sidebar -->
     <div id="mySidebar" class="sidebar">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <div class="search-container">
-            <input type="text" id="sidebarSearchInput" placeholder="Temukan..">
-            <button type="submit" onclick="searchBooksSidebar()">🔍</button>
-            <a href="homepage.php">Beranda</a>
-            <a href="profil.php">Profil</a>
-            <a href="perpustakaan.php">Perpustakaan</a>
-            <a href="logout.php">Keluar</a>
-        </div>
+        <a href="homepage.php">Beranda</a>
+        <a href="perpustakaan.php">Perpustakaan</a>
+        <a href="logout.php">Keluar</a>
     </div>
 
+    <!-- Main content -->
     <div class="container">
+        <button class="openbtn" onclick="openNav()">☰ Menu</button>
         <h1>Daftar Buku</h1>
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Temukan...">
-            <button type="submit" onclick="searchBooks()">🔍</button>
+            <button type="submit" onclick="searchBooks()">🔍 Cari</button>
         </div>
-        <div class="results" id="results">
-            <?php if (count($books) > 0): ?>
-                <?php foreach ($books as $book): ?>
-                    <div class="card">
-                        <img src="<?php echo htmlspecialchars($book['gambar']); ?>" alt="Sampul Buku">
-                        <h3><?php echo htmlspecialchars($book['judul']); ?></h3>
-                        <p><?php echo htmlspecialchars($book['penulis']); ?></p>
-                        <button class="detail" onclick="window.location.href='detail.php?id=<?php echo htmlspecialchars($book['id']); ?>'">Detail</button>
-                        <div class="comment-section">
-                            <form action="submit_comment.php" method="post">
-                                <textarea name="comment" rows="3" placeholder="Tambahkan komentar..."></textarea>
-                                <input type="hidden" name="book_id" value="<?php echo htmlspecialchars($book['id']); ?>">
-                                <button type="submit">Kirim</button>
-                            </form>
-                            <p>Komentar: <?php echo htmlspecialchars($book['komentar']); ?></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p>Tidak ada buku yang tersedia.</p>
-            <?php endif; ?>
+        <div class="book-list">
+            <?php foreach ($books as $book): ?>
+                <div class="book-item">
+                    <?php if (!empty($book['gambar'])): ?>
+                        <img src="<?php echo $book['gambar']; ?>" alt="<?php echo $book['judul']; ?>">
+                    <?php endif; ?>
+                    <h2><?php echo $book['judul']; ?></h2>
+                    <p><?php echo $book['penulis']; ?></p>
+                    <p><?php echo $book['deskripsi']; ?></p>
+                    <?php if (!empty($book['pdf'])): ?>
+                        <a href="pinjam.php?id=<?php echo $book['id']; ?>">Pinjam Buku</a>
+                        <a href="kembalikan.php?id=<?php echo $book['id']; ?>" style="background-color: red;">Kembalikan Buku</a>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
-
-    <button class="openbtn" onclick="openNav()">☰</button>
 
     <script>
         function openNav() {
@@ -249,17 +190,22 @@ if (file_exists($file)) {
         }
 
         function searchBooks() {
-            let input = document.getElementById('searchInput').value.toLowerCase();
-            let cards = document.getElementsByClassName('card');
-            for (let i = 0; i < cards.length; i++) {
-                let title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
-                if (title.indexOf(input) > -1) {
-                    cards[i].style.display = "";
+            var input = document.getElementById("searchInput").value.toLowerCase();
+            var books = document.getElementsByClassName("book-item");
+
+            for (var i = 0; i < books.length; i++) {
+                var title = books[i].getElementsByTagName("h2")[0].innerText.toLowerCase();
+                if (title.includes(input)) {
+                    books[i].style.display = "block";
                 } else {
-                    cards[i].style.display = "none";
+                    books[i].style.display = "none";
                 }
             }
         }
     </script>
 </body>
 </html>
+
+<?php
+$mysqli->close();
+?>
