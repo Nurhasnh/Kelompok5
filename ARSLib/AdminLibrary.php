@@ -1,40 +1,51 @@
-#admin
 <?php
 session_start();
 
-// Cek apakah user sudah login sebagai admin (disesuaikan dengan mekanisme login yang Anda miliki)
-// Contoh sederhana, sesuaikan dengan kebutuhan aplikasi Anda
-$adminLoggedIn = true; // Ganti dengan logika autentikasi admin yang sesuai
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
 
-if (!$adminLoggedIn) {
-    // Jika tidak login sebagai admin, redirect atau tampilkan pesan sesuai kebijakan Anda
-    echo "Anda tidak memiliki akses untuk mengakses halaman ini.";
-    exit;
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
 }
 
-// Ambil data buku dari file JSON
-$file = 'books.json';
-$books = [];
-if (file_exists($file)) {
-    $books = json_decode(file_get_contents($file), true);
+// Cek apakah user sudah login sebagai admin
+$adminLoggedIn = isset($_SESSION['admin_id']); // Sesuaikan dengan logika autentikasi admin yang sesuai
+
+if (!$adminLoggedIn) {
+    echo "Anda tidak memiliki akses untuk mengakses halaman ini.";
+    exit;
 }
 
 // Proses form untuk menghapus buku
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id_buku = $_POST['id_buku'];
-
-        // Cari indeks buku yang akan dihapus
-        $index = array_search($id_buku, array_column($books, 'id'));
-
-        // Hapus buku dari array
-        if ($index !== false) {
-            unset($books[$index]);
-            // Simpan kembali data buku ke dalam file JSON
-            file_put_contents($file, json_encode(array_values($books)));
-        }
+        
+        // Hapus buku dari database
+        $stmt = $mysqli->prepare("DELETE FROM books WHERE id_buku = ?");
+        $stmt->bind_param("s", $id_buku);
+        $stmt->execute();
+        $stmt->close();
     }
 }
+
+// Ambil data buku dari database
+$result = $mysqli->query("SELECT * FROM books");
+
+$books = [];
+while ($row = $result->fetch_assoc()) {
+    $books[] = $row;
+}
+
+$result->free();
+$mysqli->close();
 ?>
 
 <!DOCTYPE html>
@@ -176,21 +187,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php foreach ($books as $book): ?>
                 <div class="book">
                     <?php if ($book['gambar']): ?>
-                        <img src="<?php echo $book['gambar']; ?>" alt="Book Cover">
+                        <img src="<?php echo htmlspecialchars($book['gambar']); ?>" alt="Book Cover">
                     <?php endif; ?>
                     <div class="book-info">
-                        <h2><?php echo $book['judul']; ?></h2>
-                        <p><strong>ID Buku:</strong> <?php echo $book['id']; ?></p>
-                        <p><strong>Penulis:</strong> <?php echo $book['penulis']; ?></p>
-                        <p><?php echo $book['deskripsi']; ?></p>
+                        <h2><?php echo htmlspecialchars($book['judul']); ?></h2>
+                        <p><strong>ID Buku:</strong> <?php echo htmlspecialchars($book['id_buku']); ?></p>
+                        <p><strong>Penulis:</strong> <?php echo htmlspecialchars($book['penulis']); ?></p>
+                        <p><?php echo htmlspecialchars($book['deskripsi']); ?></p>
                     </div>
                     <div class="book-actions">
-                        <form method="POST" action="AdminHomepage.php" style="display:inline;">
-                            <input type="hidden" name="id_buku" value="<?php echo $book['id']; ?>">
+                        <form method="POST" action="AdminEditBook.php" style="display:inline;">
+                            <input type="hidden" name="id_buku" value="<?php echo htmlspecialchars($book['id_buku']); ?>">
                             <button type="submit">Edit</button>
                         </form>
                         <form method="POST" action="AdminLibrary.php" style="display:inline;">
-                            <input type="hidden" name="id_buku" value="<?php echo $book['id']; ?>">
+                            <input type="hidden" name="id_buku" value="<?php echo htmlspecialchars($book['id_buku']); ?>">
                             <input type="hidden" name="action" value="delete">
                             <button type="submit" class="delete">Hapus</button>
                         </form>
