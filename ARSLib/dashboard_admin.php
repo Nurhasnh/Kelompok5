@@ -1,11 +1,40 @@
 <?php
 session_start();
 
-// Simulasi data perpustakaan
-$totalBooks = 100;  // Total buku di perpustakaan
-$borrowedBooks = 25;  // Buku yang sedang dipinjam
-$availableBooks = $totalBooks - $borrowedBooks;  // Sisa buku yang tersedia
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
 
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Cek apakah user sudah login sebagai admin
+$adminLoggedIn = isset($_SESSION['admin_id']); // Sesuaikan dengan logika autentikasi admin yang sesuai
+
+if (!$adminLoggedIn) {
+    echo "Anda tidak memiliki akses untuk mengakses halaman ini.";
+    exit;
+}
+
+// Query untuk mendapatkan total buku
+$result = $mysqli->query("SELECT COUNT(*) AS totalBooks FROM books");
+$totalBooks = $result->fetch_assoc()['totalBooks'];
+
+// Query untuk mendapatkan buku yang dipinjam
+$result = $mysqli->query("SELECT COUNT(*) AS borrowedBooks FROM books WHERE status = 'dipinjam'"); // Sesuaikan dengan kolom status
+$borrowedBooks = $result->fetch_assoc()['borrowedBooks'];
+
+// Hitung sisa buku yang tersedia
+$availableBooks = $totalBooks - $borrowedBooks;
+
+$mysqli->close();
 ?>
 
 <!DOCTYPE html>
