@@ -24,5 +24,23 @@ CREATE TABLE admins (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO 'admins' ('id','username','email','password') VALUES
-(1,'nurhasnh','nurhasnh20@gmail.com','nunuy20');
+CREATE TABLE peminjaman (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT NOT NULL,
+    nama VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    tanggal_peminjaman DATE NOT NULL,
+    tanggal_pengembalian DATE NOT NULL,
+    FOREIGN KEY (book_id) REFERENCES books(id)
+);
+
+CREATE TABLE borrowed_books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_buku INT NOT NULL,
+    member_id INT NOT NULL,
+    tanggal_peminjaman DATE NOT NULL,
+    tanggal_pengembalian DATE NOT NULL,
+    FOREIGN KEY (id_buku) REFERENCES books(id),
+    FOREIGN KEY (member_id) REFERENCES members(id)
+);
+
