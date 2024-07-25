@@ -21,10 +21,6 @@ if ($mysqli->connect_error) {
     die('Koneksi gagal: ' . $mysqli->connect_error);
 }
 
-// Fungsi untuk membaca data dari database
-$result = $mysqli->query('SELECT * FROM books');
-$books = $result->fetch_all(MYSQLI_ASSOC);
-
 // Process form to upload a new book
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'upload') {
@@ -78,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
         $mysqli->close();
 
-        header('Location: AdminHomepage.php'); // Redirect to Homepage.php to display updated book list
+        header('Location: AdminHomepage.php'); // Redirect to AdminHomepage.php to display updated book list
         exit;
     }
 }
@@ -251,9 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div id="mySidebar" class="sidebar">
         <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
         <a href="AdminHomepage.php">Beranda</a>
-        <a href="admin_members.php">Data Anggota</a>
         <a href="AdminLibrary.php">Admin Library</a>
-        <a href="dashboard_admin.php">Dashboard Admin</a>
         <a href="logout.php">Keluar</a>
     </div>
 
