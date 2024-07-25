@@ -1,3 +1,57 @@
+<?php
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
+
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Fungsi untuk membersihkan data input
+function clean_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+}
+
+// Cek apakah form telah disubmit
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Ambil data dari form
+    $nama_lengkap = clean_input($_POST["nama_lengkap"]);
+    $nim = clean_input($_POST["nim"]);
+    $email = clean_input($_POST["email"]);
+    $username = clean_input($_POST["username"]);
+    $password = clean_input($_POST["password"]);
+
+    // Enkripsi password sebelum disimpan
+    $password_hash = password_hash($password, PASSWORD_BCRYPT);
+
+    // Siapkan statement SQL untuk menyimpan data
+    $stmt = $mysqli->prepare("INSERT INTO members (nama_lengkap, nim, email, username, password) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssss", $nama_lengkap, $nim, $email, $username, $password_hash);
+
+    // Eksekusi statement dan cek keberhasilan
+    if ($stmt->execute()) {
+        echo "Pendaftaran berhasil. Silakan <a href='Login.php'>login</a>.";
+    } else {
+        echo "Terjadi kesalahan: " . $stmt->error;
+    }
+
+    // Tutup statement
+    $stmt->close();
+}
+
+// Tutup koneksi
+$mysqli->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,7 +142,7 @@
 
 <div class="container">
     <h1>Daftar</h1>
-    <form action="register.php" method="post" class="form-container">
+    <form action="Daftar.php" method="post" class="form-container">
         <div>
             <label for="nama_lengkap">Nama Lengkap</label>
             <input type="text" id="nama_lengkap" name="nama_lengkap" required>
