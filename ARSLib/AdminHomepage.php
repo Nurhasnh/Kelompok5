@@ -1,12 +1,29 @@
 <?php
 session_start();
 
-// Fungsi untuk membaca data dari file JSON
-$file = 'books.json';
-$books = [];
-if (file_exists($file)) {
-    $books = json_decode(file_get_contents($file), true);
+// Cek apakah admin sudah login
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: AdminLogin.php');
+    exit;
 }
+
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
+
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Fungsi untuk membaca data dari database
+$result = $mysqli->query('SELECT * FROM books');
+$books = $result->fetch_all(MYSQLI_ASSOC);
 
 // Process form to upload a new book
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -44,30 +61,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Save book data into array
-        $new_book = [
-            'id' => $id_buku,
-            'judul' => $judul,
-            'penulis' => $penulis,
-            'deskripsi' => $deskripsi,
-            'gambar' => $gambar,
-            'pdf' => $pdf
-        ];
+        // Save book data into database
+        $stmt = $mysqli->prepare("INSERT INTO books (id_buku, judul, penulis, deskripsi, gambar, pdf) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssss", $id_buku, $judul, $penulis, $deskripsi, $gambar, $pdf);
+        $stmt->execute();
 
-        // Add new book to books array
-        $books[] = $new_book;
+        // Check if the data was inserted successfully
+        if ($stmt->affected_rows > 0) {
+            $_SESSION['message'] = 'Buku berhasil diunggah dan telah masuk ke perpustakaan.';
+            $_SESSION['success'] = true;
+        } else {
+            $_SESSION['message'] = 'Terjadi kesalahan saat mengunggah buku.';
+            $_SESSION['success'] = false;
+        }
 
-        // Save updated books array back to JSON file
-        file_put_contents($file, json_encode($books));
+        $stmt->close();
+        $mysqli->close();
 
-        // Set success message
-        $_SESSION['message'] = 'Buku berhasil diunggah dan telah masuk ke perpustakaan.';
-        $_SESSION['success'] = true;
-        header('Location: Homepage.php'); // Redirect to Homepage.php to display updated book list
+        header('Location: AdminHomepage.php'); // Redirect to Homepage.php to display updated book list
         exit;
     }
 }
-
 ?>
 
 <!DOCTYPE html>
