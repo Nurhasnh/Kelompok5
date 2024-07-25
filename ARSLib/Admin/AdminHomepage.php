@@ -260,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button class="openbtn" onclick="openNav()">☰</button>
 
     <div class="container">
-        <h1>Admin Library</h1>
+        <h1>POSTINGAN ADMIN</h1>
         <form action="AdminHomepage.php" method="post" enctype="multipart/form-data" class="form-container">
             <div>
                 <label for="id_buku">ID Buku</label>
