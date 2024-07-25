@@ -1,4 +1,60 @@
-#Admin
+<?php
+session_start();
+
+// Konfigurasi database
+$host = 'localhost';
+$db = 'ARSLib';
+$user = 'root'; // Sesuaikan dengan username database Anda
+$pass = ''; // Sesuaikan dengan password database Anda
+
+// Buat koneksi
+$mysqli = new mysqli($host, $user, $pass, $db);
+
+// Periksa koneksi
+if ($mysqli->connect_error) {
+    die('Koneksi gagal: ' . $mysqli->connect_error);
+}
+
+// Proses login
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    
+    // Cek kredensial
+    $stmt = $mysqli->prepare("SELECT id, password FROM admins WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $stmt->store_result();
+    
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($id, $hashed_password);
+        $stmt->fetch();
+        
+        // Verifikasi password
+        if (password_verify($password, $hashed_password)) {
+            // Set session
+            $_SESSION['admin_id'] = $id;
+            $_SESSION['logged_in'] = true;
+            
+            // Redirect ke halaman admin utama
+            header('Location: AdminHomepage.php');
+            exit;
+        } else {
+            $_SESSION['message'] = 'Username atau password salah.';
+            $_SESSION['success'] = false;
+        }
+    } else {
+        $_SESSION['message'] = 'Username tidak ditemukan.';
+        $_SESSION['success'] = false;
+    }
+    
+    $stmt->close();
+    $mysqli->close();
+    
+    header('Location: AdminLogin.php'); // Redirect ke halaman login untuk menampilkan pesan
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,6 +82,8 @@
             align-items: center;
             flex-direction: column;
             padding: 30px;
+            width: 100%;
+            max-width: 400px;
         }
 
         .container h2 {
@@ -84,9 +142,9 @@
 <div class="container">
     <div class="header">Selamat Datang, Admin!</div>
     <h2>Masuk</h2>
-    <form action="AdminHomepage.php" method="POST" class="login-form">
-        <input type="text" placeholder="Masukan Username" required>
-        <input type="password" placeholder="Masukan Password" required>
+    <form action="AdminLogin.php" method="POST" class="login-form">
+        <input type="text" name="username" placeholder="Masukkan Username" required>
+        <input type="password" name="password" placeholder="Masukkan Password" required>
         <div>
             <input type="checkbox" id="remember">
             <label for="remember">Ingat saya</label>
@@ -97,6 +155,14 @@
             Belum punya Akun? <a href="AdminDaftar.php">Daftar</a>
         </div>
     </form>
+    <?php if (isset($_SESSION['message'])): ?>
+        <div class="message">
+            <?php
+            echo $_SESSION['message'];
+            unset($_SESSION['message']);
+            ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 </body>
