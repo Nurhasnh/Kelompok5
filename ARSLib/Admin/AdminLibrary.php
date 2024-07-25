@@ -30,8 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Hapus buku dari database
         $stmt = $mysqli->prepare("DELETE FROM books WHERE id_buku = ?");
-        $stmt->bind_param("s", $id_buku);
-        $stmt->execute();
+        $stmt->bind_param("i", $id_buku);
+        if ($stmt->execute()) {
+            echo "Buku berhasil dihapus.";
+        } else {
+            echo "Terjadi kesalahan saat menghapus buku: " . $stmt->error;
+        }
         $stmt->close();
     }
 }
